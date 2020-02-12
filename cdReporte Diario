@@ -1,0 +1,213 @@
+##    Código de Reporte Diario    ##
+##    Hoja:   Reporte Diario      ##
+Private Sub Worksheet_Activate()
+    
+    Dim mensaje As String
+    mensaje = MsgBox("Desea actualizar las conexiones?", vbYesNo, "Actualización de datos")
+    If mensaje = vbYes Then
+    
+    Application.ScreenUpdating = False
+    
+        Dim conexion As Connections, i As Integer
+        Dim libroCompilatorio As Workbook
+        Set conexion = ThisWorkbook.Connections
+    
+        Workbooks.Open ThisWorkbook.Path & "\Compilatorio.xlsm"
+        Set libroCompilatorio = Workbooks("Compilatorio.xlsm")
+    
+        For i = 1 To 2
+            conexion(i).Refresh
+        Next i
+    
+        libroCompilatorio.Close
+        
+        If DateTime.Now < #9:00:00 AM# Then
+            ThisWorkbook.Worksheets("Reporte Diario").Range("B2").Value = Format(DateTime.Now - 1, "mm/dd/yy")
+        Else
+            ThisWorkbook.Worksheets("Reporte Diario").Range("B2").Value = Format(DateTime.Now, "mm/dd/yy")
+        End If
+        MsgBox "Se ha actualizado correctamente los datos." & vbNewLine & "Dé click en Aceptar para continuar"
+        
+    End If
+End Sub
+
+
+Private Sub Worksheet_Change(ByVal Target As Range)
+    
+    Application.ScreenUpdating = False
+    If Not Application.Intersect(Range("B2:B4"), Range(Target.Address)) Is Nothing Then
+    
+    Range("F18", "F20").ClearContents
+    Range("F8", "F15").ClearContents
+    Range("I8", "O21").ClearContents
+    
+    Dim intFecha As Date, strTurno As String, strLinea As String, strMedida(4) As String
+    Dim i As Integer, j As Integer, intResultado As Variant
+    
+    intFecha = Range("B2").Value
+    strTurno = Range("B4").Value
+    strMedida(1) = "OEE"
+    strMedida(2) = "MP"
+    strMedida(3) = "SP"
+    strMedida(4) = "Total - Dispersión de ingreso"
+    
+    For i = 0 To 8
+        strLinea = Cells(8 + i, 2).Value
+        For j = 1 To 3
+            Cells(8 + i, 8 + j).FormulaR1C1 = IndicadorCubo(strMedida(j), intFecha, strLinea, strTurno)
+            Cells(8 + i, 8 + 4).FormulaR1C1 = IndicadorCubo(strMedida(1), intFecha, strLinea, strTurno, "Mes")
+            With Cells(8 + i, 8 + 6)
+                .FormulaR1C1 = IndicadorCubo(strMedida(4), intFecha, strLinea, strTurno)
+                .NumberFormat = "0.00000"
+            End With
+            
+        Next j
+    Next i
+    For i = 0 To 3
+        strLinea = Cells(18 + i, 2).Value
+        For j = 1 To 3
+            Cells(18 + i, 8 + j).FormulaR1C1 = IndicadorCubo(strMedida(j), intFecha, strLinea, strTurno)
+            Cells(18 + i, 8 + 4).FormulaR1C1 = IndicadorCubo(strMedida(1), intFecha, strLinea, strTurno, "Mes")
+            With Cells(18 + i, 8 + 6)
+                .FormulaR1C1 = IndicadorCubo(strMedida(4), intFecha, strLinea, strTurno)
+                .NumberFormat = "0.00000"
+            End With
+        Next j
+    Next i
+    
+    For i = 0 To 7
+        strLinea = Cells(8 + i, 2).Value
+        Cells(8 + i, 6).FormulaR1C1 = IndicadorCubo("Total - Cajas", intFecha, strLinea, strTurno)
+    Next i
+    For i = 0 To 2
+        strLinea = Cells(18 + i, 2).Value
+        Cells(18 + i, 6).FormulaR1C1 = IndicadorCubo("Total - Cajas", intFecha, strLinea, strTurno)
+    Next i
+     
+    Dim wshtPlaneado As Worksheet
+    Dim tblRegistro As ListObject
+     
+    Dim strFechaComparacion As String, strTurnoComparacion As String, strLineaComparacion As String
+    Dim strFechaResultado As String, strTurnoResultado As String, strLineaResultado As String
+    Dim blnComentarioVacio As Boolean, strComentario As String
+    
+    strFechaComparacion = Cells(2, 2).Value
+    strTurnoComparacion = Cells(4, 2).Value
+    
+    Set wshtPlaneado = ThisWorkbook.Worksheets("Plan De Producción")
+    Set tblRegistro = wshtPlaneado.ListObjects("DimRegistro")
+    
+    Range("M8", "M21").ClearContents
+    
+    With tblRegistro
+        For i = 1 To tblRegistro.ListRows.Count
+        
+        strFechaResultado = .Range(i + 1, 1).Value
+        strTurnoResultado = .Range(i + 1, 2).Value
+        strLineaResultado = .Range(i + 1, 3).Value
+        blnComentarioVacio = IsEmpty(.Range(i + 1, .ListColumns("Comentario").Index).Value)
+    
+            For j = 1 To 13
+            strLineaComparacion = Cells(7 + j, 2).Value
+            
+            If strTurnoComparacion = "" Then
+                If strFechaResultado = strFechaComparacion And _
+                     strLineaResultado = strLineaComparacion And _
+                     blnComentarioVacio = False Then
+                        strComentario = Cells(7 + j, 15).Value & vbNewLine & .Range(i + 1, .ListColumns("Turno").Index).Value & ": " & .Range(i + 1, .ListColumns("Comentario").Index).Value
+                        With Cells(7 + j, 15)
+                            .Value = Strings.Right(strComentario, Strings.Len(strComentario) - 0)
+                        End With
+                End If
+            Else
+                If strFechaResultado = strFechaComparacion And _
+                    Strings.UCase(strTurnoResultado) = Strings.UCase(strTurnoComparacion) And _
+                    strLineaResultado = strLineaComparacion And _
+                    blnComentarioVacio = False Then
+                        strComentario = Cells(7 + j, 15).Value & vbNewLine & strTurnoResultado & ": " & .Range(i + 1, .ListColumns("Comentario").Index).Value
+                        Cells(7 + j, 15).Value = Strings.Right(strComentario, Strings.Len(strComentario) - 2)
+                End If
+            End If
+            Next j
+        Next i
+    End With
+    End If
+    Exit Sub
+    
+Solucionador:
+    Select Case Err.Number
+        Case 1004
+            Resume Next
+        Case Else
+            MsgBox "Error desconocido" & vbNewLine & Err.Description
+    End Select
+        Err.Clear
+End Sub
+
+Private Function IndicadorCubo(ByVal Medida As String, Optional ByVal Fecha As Date, Optional ByVal Linea As String, Optional ByVal Turno As String, Optional ByVal ClaseDeFecha As String) As Variant
+    
+    Dim strCubeMemberAño As String, strCubeMemberTrimestre As String, strCubeMemberMes As String, strCubeMemberSemana As String, strCubeMemberFecha As String, strCubeMemberCalendario As String
+    Dim strCubeMemberLinea As String, strCubeMemberTurno As String, strCubeMemberMedida As String
+    
+    
+    strCubeMemberMedida = "[Measures]" & "." & "[" & Medida & "]"
+    strCubeMemberMedida = "CUBEMEMBER(" & """" & ThisWorkbook.Model.Name & """," & """" & strCubeMemberMedida & """" & ")"
+    
+    If Fecha = #12:00:00 AM# Then GoTo NoHayFecha
+    
+    strCubeMemberAño = "[DimFecha].[Calendario].[Año]"
+    strCubeMemberAño = strCubeMemberAño & "." & "[" & DateTime.Year(Fecha) & "]"
+    strCubeMemberTrimestre = strCubeMemberAño & ".&" & "[" & "Q" & DateTime.DatePart("q", Fecha, vbMonday, vbFirstFourDays) & "]"
+    strCubeMemberMes = strCubeMemberTrimestre & ".&" & "[" & Strings.Format(Fecha, "mmmm") & "]"
+    strCubeMemberSemana = strCubeMemberMes & ".&" & "[" & DateTime.DatePart("ww", Fecha, vbMonday, vbFirstFourDays) & "]"
+    strCubeMemberFecha = strCubeMemberSemana & ".&" & "[" & Format(Fecha, "yyyy-mm-ddThh:nn:ss") & "]"
+    
+    If Strings.LCase(ClaseDeFecha) = "año" Then
+        strCubeMemberCalendario = "CUBEMEMBER(" & """" & ThisWorkbook.Model.Name & """," & """" & strCubeMemberAño & """" & ")"
+    ElseIf Strings.LCase(ClaseDeFecha) = "trimestre" Then
+        strCubeMemberCalendario = "CUBEMEMBER(" & """" & ThisWorkbook.Model.Name & """," & """" & strCubeMemberTrimestre & """" & ")"
+    ElseIf Strings.LCase(ClaseDeFecha) = "mes" Then
+        strCubeMemberCalendario = "CUBEMEMBER(" & """" & ThisWorkbook.Model.Name & """," & """" & strCubeMemberMes & """" & ")"
+    ElseIf Strings.LCase(ClaseDeFecha) = "semana" Then
+        strCubeMemberCalendario = "CUBEMEMBER(" & """" & ThisWorkbook.Model.Name & """," & """" & strCubeMemberSemana & """" & ")"
+    Else
+        strCubeMemberCalendario = "CUBEMEMBER(" & """" & ThisWorkbook.Model.Name & """," & """" & strCubeMemberFecha & """" & ")"
+    End If
+
+NoHayFecha:
+    
+    If Linea = "" Then GoTo NoHayLinea
+    
+    If Strings.UCase(Linea) <> "ICE CREAM" And Strings.UCase(Linea) <> "SPREADS" Then
+        strCubeMemberLinea = "[DimLineas].[Línea]"
+        strCubeMemberLinea = strCubeMemberLinea & ".&" & "[" & Linea & "]"
+        strCubeMemberLinea = "CUBEMEMBER(" & """" & ThisWorkbook.Model.Name & """," & """" & strCubeMemberLinea & """" & ")"
+    Else
+        strCubeMemberLinea = "[DimTecnologia].[Categoría]"
+        strCubeMemberLinea = strCubeMemberLinea & ".&" & "[" & Linea & "]"
+        strCubeMemberLinea = "CUBEMEMBER(" & """" & ThisWorkbook.Model.Name & """," & """" & strCubeMemberLinea & """" & ")"
+    End If
+
+NoHayLinea:
+
+    If Turno = "" Then GoTo NoHayTurno
+    
+    strCubeMemberTurno = "[DimTurnos].[Turno]"
+    strCubeMemberTurno = strCubeMemberTurno & ".&" & "[" & Turno & "]"
+    strCubeMemberTurno = "CUBEMEMBER(" & """" & ThisWorkbook.Model.Name & """," & """" & strCubeMemberTurno & """" & ")"
+
+NoHayTurno:
+
+    If Medida <> "" And Fecha = #12:00:00 AM# And Linea = "" And Turno = "" Then
+        IndicadorCubo = "=CUBEVALUE(" & """" & ThisWorkbook.Model.Name & """," & "" & strCubeMemberMedida & ")"
+    ElseIf Medida <> "" And Fecha <> #12:00:00 AM# And Linea = "" And Turno = "" Then
+        IndicadorCubo = "=CUBEVALUE(" & """" & ThisWorkbook.Model.Name & """," & "" & strCubeMemberMedida & "," & strCubeMemberCalendario & ")"
+    ElseIf Medida <> "" And Fecha <> #12:00:00 AM# And Linea <> "" And Turno = "" Then
+        IndicadorCubo = "=CUBEVALUE(" & """" & ThisWorkbook.Model.Name & """," & "" & strCubeMemberMedida & "," & strCubeMemberCalendario & "," & strCubeMemberLinea & ")"
+    ElseIf Medida <> "" And Fecha <> #12:00:00 AM# And Linea <> "" And Turno <> "" Then
+        IndicadorCubo = "=CUBEVALUE(" & """" & ThisWorkbook.Model.Name & """," & "" & strCubeMemberMedida & "," & strCubeMemberCalendario & "," & strCubeMemberLinea & "," & strCubeMemberTurno & ")"
+    Else
+        MsgBox "No se ha ingresado una medida aceptable" & vbNewLine & Err.Description
+    End If
+    
+End Function
