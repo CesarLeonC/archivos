@@ -1,0 +1,55 @@
+Private Sub Worksheet_Change(ByVal Target As Range)
+
+    If Not Application.Intersect(Range("b4"), Range(Target.Address)) Is Nothing Then
+        Application.ScreenUpdating = False
+        Rows.Hidden = False
+        Dim tblTablas As ListObjects
+            With ThisWorkbook.Worksheets("Consolidado")
+                Set tblTablas = .ListObjects
+            End With
+            
+        Dim rngNumeros As Range, rngObjetivo As Range, numeroFila As Integer
+            Set rngNumeros = Range(Cells(7, 1), Cells(55, 1))
+            
+        For Each cell In rngNumeros
+            numeroFila = cell.Row - Cells(6, 2).Row
+            cell.Offset(0, 5).FormulaR1C1 = "=LARGE(" & tblTablas(3).Name & "[" & Cells(4, 2).Value & "],RC[-5])"
+            cell.Offset(0, 1).FormulaR1C1 = "=PROPER(IF(RC[4]=0,NA(),INDEX(" & tblTablas(3).Name & ",MATCH(RC[4]," & tblTablas(3).Name & "[" & Cells(4, 2).Value & "], 0),MATCH(R[-" & numeroFila & "]C," & tblTablas(3).Name & "[#Headers],0))))"
+            cell.Offset(0, 2).FormulaR1C1 = "=INDEX(" & tblTablas(3).Name & ",MATCH(RC[-1]," & tblTablas(3).Name & "[" & Cells(6, 2).Value & "], 0),MATCH(R[-" & numeroFila & "]C," & tblTablas(3).Name & "[#Headers],0))"
+            cell.Offset(0, 3).FormulaR1C1 = "=SUMIFS(TblDatosBVG[Volumen Total],tblDatosBVG[ID],CONCATENATE(""="",RC[-1]),tblDatosBVG[Mes],CONCATENATE(""="",R4C2))"
+            cell.Offset(0, 4).FormulaR1C1 = "=SUMIFS(TblDatosBVQ[Volumen Total],tblDatosBVQ[ID],CONCATENATE(""="",RC[-2]),tblDatosBVQ[Mes],CONCATENATE(""="",R4C2))"
+            cell.Offset(0, 6).FormulaR1C1 = "=INDEX(" & tblTablas(3).Name & ",MATCH(RC[-5]," & tblTablas(3).Name & "[" & Cells(6, 2).Value & "], 0),MATCH(R[-" & numeroFila & "]C," & tblTablas(3).Name & "[#Headers],0))"
+            
+            If IsError(cell.Offset(0, 1).Value) Then
+                Rows(cell.Row).Hidden = True
+            End If
+        Next cell
+        
+        Set rngNumeros = rngNumeros.Offset(0, 8)
+        
+        For Each cell In rngNumeros
+            numeroFila = cell.Row - Cells(6, 2).Row
+            cell.Offset(0, 5).FormulaR1C1 = "=LARGE(" & tblTablas(1).Name & "[" & Cells(4, 2).Value & "],RC[-5])"
+            cell.Offset(0, 1).FormulaR1C1 = "=PROPER(IF(RC[4]=0,NA(),INDEX(" & tblTablas(1).Name & ",MATCH(RC[4]," & tblTablas(1).Name & "[" & Cells(4, 2).Value & "], 0),MATCH(R[-" & numeroFila & "]C," & tblTablas(1).Name & "[#Headers],0))))"
+            cell.Offset(0, 2).FormulaR1C1 = "=INDEX(" & tblTablas(1).Name & ",MATCH(RC[-1]," & tblTablas(1).Name & "[" & Cells(6, 10).Value & "], 0),MATCH(R[-" & numeroFila & "]C," & tblTablas(1).Name & "[#Headers],0))"
+            cell.Offset(0, 3).FormulaR1C1 = "=SUMIFS(TblDatosBVG[Volumen Efectivo],tblDatosBVG[ID],CONCATENATE(""="",RC[-1]),tblDatosBVG[Mes],CONCATENATE(""="",R4C2))"
+            cell.Offset(0, 4).FormulaR1C1 = "=SUMIFS(TblDatosBVQ[Volumen Efectivo],tblDatosBVQ[ID],CONCATENATE(""="",RC[-2]),tblDatosBVQ[Mes],CONCATENATE(""="",R4C2))"
+            cell.Offset(0, 6).FormulaR1C1 = "=INDEX(" & tblTablas(1).Name & ",MATCH(RC[-5]," & tblTablas(1).Name & "[" & Cells(6, 10).Value & "], 0),MATCH(R[-" & numeroFila & "]C," & tblTablas(1).Name & "[#Headers],0))"
+        Next cell
+        
+        Set rngNumeros = rngNumeros.Offset(0, 8)
+        
+        For Each cell In rngNumeros
+            numeroFila = cell.Row - Cells(6, 2).Row
+            cell.Offset(0, 5).FormulaR1C1 = "=LARGE(" & tblTablas(4).Name & "[" & Cells(4, 2).Value & "],RC[-5])"
+            cell.Offset(0, 1).FormulaR1C1 = "=PROPER(IF(RC[4]=0,NA(),INDEX(" & tblTablas(4).Name & ",MATCH(RC[4]," & tblTablas(4).Name & "[" & Cells(4, 2).Value & "], 0),MATCH(R[-" & numeroFila & "]C," & tblTablas(4).Name & "[#Headers],0))))"
+            cell.Offset(0, 2).FormulaR1C1 = "=INDEX(" & tblTablas(4).Name & ",MATCH(RC[-1]," & tblTablas(4).Name & "[" & Cells(6, 18).Value & "], 0),MATCH(R[-" & numeroFila & "]C," & tblTablas(4).Name & "[#Headers],0))"
+            cell.Offset(0, 3).FormulaR1C1 = "=SUMIFS(TblDatosBVG[Comisiones],tblDatosBVG[ID],CONCATENATE(""="",RC[-1]),tblDatosBVG[Mes],CONCATENATE(""="",R4C2))"
+            cell.Offset(0, 4).FormulaR1C1 = "=SUMIFS(TblDatosBVQ[Comisiones],tblDatosBVQ[ID],CONCATENATE(""="",RC[-2]),tblDatosBVQ[Mes],CONCATENATE(""="",R4C2))"
+            cell.Offset(0, 6).FormulaR1C1 = "=INDEX(" & tblTablas(4).Name & ",MATCH(RC[-5]," & tblTablas(4).Name & "[" & Cells(6, 18).Value & "], 0),MATCH(R[-" & numeroFila & "]C," & tblTablas(4).Name & "[#Headers],0))"
+        Next cell
+        
+        Columns.AutoFit
+    End If
+    
+End Sub
